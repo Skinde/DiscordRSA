@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" name="viewport" content="width=device-width initial-scale=1">
+        <style>
+            .centerbox{
+                align-items: center;
+                height: 30vh;
+                width: 50vw;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin: auto;
+            }
+            .certificateinputtext{
+                text-align: center;
+                font-family: 'Helvetica';
+                font-size: medium;
+            }
+            .certificateinputbox{
+                display: block;
+                position: relative;
+                margin: 2vh auto 0;
+                width: 25vw;
+                height: 20vh;
+            }
+            .savebutton{
+                position: relative;
+                margin: 2vh 32vw 0;
+            }
+    
+        </style>
+    </head>
+    <body>
+        <div class="centerbox">
+        
+            <div class="certificateinputtext">
+                Paste links to public keys collection:
+            </div>
+            <textarea id="certificatelinks" class="certificateinputbox" name="Text1" cols="40" rows="5" placeholder="github.com/..."></textarea>
+            
+            <button class="savebutton" type="button" onclick="savesettings()">Save</button>
+        </div>     
+    </body>
+
+    <script>
+
+        function savesettings() {
+            // Get the value of the textarea
+            const content = document.getElementById('certificatelinks').value;
+
+            // Prepare the data as JSON
+            const data = { content };
+
+            // Send a POST request using Fetch API
+            fetch('/savesettings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Success:', result);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+    </script>
+</html>
+
+

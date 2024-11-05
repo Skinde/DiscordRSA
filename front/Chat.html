@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" name="viewport" content="width=device-width initial-scale=1">
+        <style>
+            .centerbox{
+                height: 10vh;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                border-style: dotted;
+            }
+            .channelinputbox{
+                position: relative;
+                margin: 2.5vh 2vw 0;
+                width: 15vw;
+                height: 4vh;
+            }
+            .serverinputbox{
+                position: relative;
+                margin: 2.5vh 1vw 0;
+                width: 15vw;
+                height: 4vh;
+            }
+            .userinputbox{
+                position: relative;
+                margin: 2.5vh 1vw 0;
+                width: 15vw;
+                height: 4vh;
+            }
+            .messagehistory{
+                align-items: center;
+                height: 80vh;
+                position: absolute;
+                top: 10vh;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                border-style: dashed;
+            }
+            .messageinputbox{
+                align-items: center;
+                height: 10vh;
+                position: absolute;
+                top: 90vh;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+            .configurationbutton{
+                position: absolute;
+                top: 3.5vh;
+                right: 2vw;
+            }
+
+    
+        </style>
+    </head>
+    <body>
+        
+
+        <div class="centerbox">
+            <form onsubmit="return updateparameters()">
+                <input id = "channelInputBox" class="channelinputbox" placeholder="Channel ID"></input>
+                <input id="userInputBox" class="userinputbox" placeholder="Username">
+                <input type="submit" value="Update" />
+            </form>
+            
+            <a href="/configuration">
+                <button class="configurationbutton">Configuration</button>
+            </a>
+        </div>  
+        
+        <div class="messagehistory">
+
+        </div>
+
+        <form id="sendMessageForm" onsubmit="return sendmessage()">
+            <textarea id="messageInputBox" cols="40" rows="5" class="messageinputbox"></textarea>
+            <input type="submit" hidden />
+        </form>
+        
+    </body>
+
+    <script>
+
+        function sendmessage() {
+            // Get the value of the textarea
+            const content = document.getElementById('messageInputBox').value;
+
+            // Prepare the data as JSON
+            const data = { content };
+
+            // Send a POST request using Fetch API
+            fetch('/sendmessage', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Success:', result);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function savechannel() {
+            // Get the value of the textarea
+            const content = document.getElementById('channelInputBox').value;
+
+            // Prepare the data as JSON
+            const data = { content };
+
+            // Send a POST request using Fetch API
+            fetch('/savecurrentchannel', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Success:', result);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function saveuser() {
+            // Get the value of the textarea
+            const content = document.getElementById('userInputBox').value;
+
+            // Prepare the data as JSON
+            const data = { content };
+
+            // Send a POST request using Fetch API
+            fetch('/saveuser', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Success:', result);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function updateparameters(){
+            savechannel()
+            saveuser()
+        }
+
+        messagebox = document.getElementById("messageInputBox")
+        messagebox.addEventListener("keypress", function(event) {
+        // If the user presses the "Enter" key on the keyboard
+        if (event.key === "Enter") {
+            sendmessage();
+        }
+});
+
+    </script>
+    
+</html>
+
