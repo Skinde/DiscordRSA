@@ -73,8 +73,12 @@
             </a>
         </div>  
         
-        <div class="messagehistory">
-
+        <div id="messageHistory" class="messagehistory">
+            <% data.forEach(element => { %>
+                
+            <p><%= element.content %></p>
+            
+                <% }) %>
         </div>
 
         <form id="sendMessageForm" onsubmit="return sendmessage()">
@@ -84,6 +88,7 @@
         
     </body>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
 
         function sendmessage() {
@@ -169,7 +174,19 @@
         if (event.key === "Enter") {
             sendmessage();
         }
-});
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+            const socket = io();
+
+            // Listen for new messages and update the DOM
+            socket.on('newMessage', (message) => {
+                const messageList = document.getElementById('messageHistory');
+                const newMessage = document.createElement('p');
+                newMessage.textContent = message;
+                messageList.appendChild(newMessage);
+            });
+    });
 
     </script>
     

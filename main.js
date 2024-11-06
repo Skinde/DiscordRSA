@@ -4,7 +4,12 @@ const prompt = require('prompt-sync')();
 const fs = require('node:fs');
 const crypto = require('crypto');   
 const express = require('express');
-const discordjs = require('discord.js')
+const discordjs = require('discord.js');
+const ejs = require('ejs');
+const bodyParser = require('body-parser');
+const socketIo = require('socket.io');
+const http = require('http');
+
 
 class discordUser {
     discordUserID
@@ -195,11 +200,24 @@ class discordServerBot {
     
 }
 
-const app = express()
-app.use(express.json());
-const router = express.Router();
+const app = express();
+app.set("view engine", "ejs");
+app.set('views', path.join(__dirname, 'front'));
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({
+    extended: true
+}))
+
+const server = http.createServer(app);
+const io = socketIo(server);
+
+
 const Discordclient = new discordjs.Client();
 
+
+const data = [
+]
 current_user_to_send_message = null
 current_channel_to_send_message = null
 
@@ -209,17 +227,14 @@ DiscordEncryption = new discordEncryption()
 DiscordBot = new discordServerBot();
 DiscordEncryption.loadPrivateKey(prompt("password: "))
 
-app.set("view engine", "pug");
-app.set("views", path.join(__dirname, "views"));
-
 
 app.get('/', (req, res) => {
-    res.sendFile('Chat.html',{root: "./front"})
+    res.render('Chat', {data: data});
 })
 
 
 app.get('/configuration', (req, res) => {
-    res.sendFile('Configuration.html',{root: "./front"})
+    res.render('Configuration')
 })
 
 app.put('/savesettings', function (req, res) {
@@ -238,7 +253,6 @@ app.put('/savecurrentchannel', function (req, res){
 
 app.put('/sendmessage', function (req, res) {
     message = req.body.content;
-    console.log(DiscordBot.discordUsers);
     message_channel = Discordclient.channels.cache.get(current_channel_to_send_message);
     encrypted_message = DiscordBot.sendMessage(current_user_to_send_message, message);
     message_channel.send(encrypted_message)
@@ -248,6 +262,21 @@ app.put('/saveuser', function (req, res) {
     current_user_to_send_message = req.body.content;
 })
 
+Discordclient.on('message', message => {
+    decryptedMessage = DiscordEncryption.decryptMessage(message.content)
+    if (decryptedMessage != null && decryptedMessage != "")
+    {
+        message = {}
+        message['content'] = decryptedMessage
+        data.push(message);
+        io.emit('newMessage', decryptedMessage);
+        console.log(decryptedMessage)
+    }
+})
+
+
 
 Discordclient.login(prompt("token: "))
-app.listen(3000)
+server.listen(3000, (req, res) => {
+    console.log("App is running on port 3000")
+})
