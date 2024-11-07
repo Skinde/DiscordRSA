@@ -25,8 +25,11 @@ class discordUser {
 }
 
 class discordEncryption {
+    privateKeysDirectory = "privateKeys"
+    publicKeysDirectory = "publicKeys"
     privateKeyFilename = "encryptedPrivateKey.aes"
     publicKeyFilename = "publicKey.aes"
+    privateKeyHasLoaded = false
     #key
 
     generateRSAkey(){
@@ -37,7 +40,10 @@ class discordEncryption {
     }
 
     savePublicKey() {
-        fs.writeFileSync(path.join("publicKeys", this.publicKeyFilename), this.exportPublicKey());
+        if (!fs.existsSync(this.publicKeysDirectory)){
+            fs.mkdirSync(this.publicKeysDirectory);
+        }
+        fs.writeFileSync(path.join(this.publicKeysDirectory, this.publicKeyFilename), this.exportPublicKey());
     }
 
     savePrivateKey(password) {
@@ -61,6 +67,9 @@ class discordEncryption {
             const outputBuffer = Buffer.concat([salt, iv, encryptedPrivateKey]);
     
             // Write the encrypted key to a file
+            if (!fs.existsSync(this.privateKeysDirectory)){
+                fs.mkdirSync(this.privateKeysDirectory);
+            }
             fs.writeFileSync(path.join("privateKeys", this.privateKeyFilename), outputBuffer);
         } catch (error) {
             console.error('An error occurred:', error);
@@ -92,6 +101,7 @@ class discordEncryption {
     
             // Convert decrypted private key back to a string if needed
             decryptedPrivateKey = decryptedPrivateKey.toString('utf-8');
+            this.privateKeyHasLoaded = true;
             if (decryptedPrivateKey.slice(0, 31) != "-----BEGIN RSA PRIVATE KEY-----")
             {
                 console.error("Wrong password")
@@ -99,6 +109,7 @@ class discordEncryption {
             this.key = new NodeRSA(decryptedPrivateKey);
         } catch (error) {
             console.error('An error occurred during decryption:', error);
+            this.privateKeyHasLoaded = false;
             return null;
         } finally {
             // Attempt to clear sensitive data from memory (note: this may not be fully effective)
@@ -171,6 +182,8 @@ class discordServerBot {
                 
             }
         }
+
+        //TODO: FIND MISSMATCH BETWEEN MULTIPLE KEYS
         return this.discordUsers;
     }
 
@@ -231,16 +244,46 @@ current_channel_to_send_message = null
 
 DiscordEncryption = new discordEncryption()
 DiscordBot = new discordServerBot();
-DiscordEncryption.loadPrivateKey(prompt("password: "))
+
 
 
 app.get('/', (req, res) => {
-    res.render('Chat', {data: data});
+    fs.stat(path.join(DiscordEncryption.privateKeysDirectory, DiscordEncryption.privateKeyFilename), function(err, stat) {
+        if (err == null) {
+            if (!DiscordEncryption.privateKeyHasLoaded)
+            {
+                res.render('SignIn')
+            }
+            else
+            {
+                res.render('Chat', {data: data});
+            }
+        } 
+        else
+        {
+            res.redirect('/configuration')
+        }
+        
+    });
 })
 
 
 app.get('/configuration', (req, res) => {
     res.render('Configuration')
+})
+
+app.get('/newpassword', function (req, res) {
+   res.sendFile('CreateKeys.html', {root: './front'})
+})
+
+app.post('/createkeys', function (req, res) {
+    console.log("keys creating");
+    password = req.body.content;
+    DiscordEncryption.generateRSAkey();
+    DiscordEncryption.savePrivateKey(password);
+    DiscordEncryption.savePublicKey();
+    console.log("keys created");
+    res.redirect('/')
 })
 
 app.put('/savesettings', function (req, res) {
@@ -251,6 +294,18 @@ app.put('/savesettings', function (req, res) {
         DiscordBot.fetchPublicKeys(links[i]).then(data => DiscordBot.parseUsers(data)).then(parseData => {console.log(DiscordBot.discordUsers)})
     }
 
+})
+
+
+
+app.put('/authorize', function(req, res) {
+    password = req.body.content;
+    DiscordEncryption.loadPrivateKey(password);
+    console.log(DiscordEncryption.privateKeyHasLoaded)
+    if (DiscordEncryption.privateKeyHasLoaded)
+    {
+        res.render('Chat', {data: data});
+    }
 })
 
 app.put('/savecurrentchannel', function (req, res){
@@ -268,9 +323,12 @@ app.put('/saveuser', function (req, res) {
     current_user_to_send_message = req.body.content;
 })
 
+app.put('/setoken', function (req, res ){
+    Discordclient.login(req.body.content)
+})
+
 Discordclient.on('message', message => {
     decryptedMessage = DiscordEncryption.decryptMessage(message.content)
-    console.log(message.content)
     if (decryptedMessage != null && decryptedMessage != "")
     {
         message_data = {}
@@ -281,9 +339,6 @@ Discordclient.on('message', message => {
     }
 })
 
-
-
-Discordclient.login(prompt("token: "))
 server.listen(3000, (req, res) => {
     console.log("App is running on port 3000")
 })

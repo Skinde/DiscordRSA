@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .centerbox {
+            align-items: center;
+            height: 30vh;
+            width: 50vw;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+        }
+        .certificateinputtext {
+            text-align: center;
+            font-family: 'Helvetica';
+            font-size: medium;
+        }
+        .createkeys {
+            position: relative;
+            margin: 2vh 32vw 0;
+        }
+        .password {
+            display: block;
+            position: relative;
+            margin: 2vh auto 0;
+            width: 25vw;
+        }
+    </style>
+</head>
+<body>
+    <div class="centerbox">
+        <center>
+            Set new password
+                <input id="password" class="password" type="password" placeholder="New password" />
+                <button onclick="createkeys()" class="createkeys" type="submit">Save</button>
+        </center>
+    </div>
+</body>
+
+<script>
+    function createkeys() {
+
+        
+        // Get the value of the input
+        const content = document.getElementById('password').value;
+
+        // Prepare the data as JSON
+        const data = { content };
+
+        // Send a POST request using Fetch API
+        fetch('/createkeys', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (response.redirected == true)
+            {
+                window.location.href = response.url;
+            }
+        })
+        
+        return false;
+             
+    }
+
+</script>
+</html>

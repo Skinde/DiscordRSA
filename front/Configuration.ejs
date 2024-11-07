@@ -30,6 +30,16 @@
                 position: relative;
                 margin: 2vh 32vw 0;
             }
+            .createkeys{
+                position: relative;
+                margin: 2vh 32vw 0;
+            }
+            .password {
+                display:block;
+                position:relative;
+                margin: 2vh auto 0;
+                width: 25vw;
+            }
     
         </style>
     </head>
@@ -41,8 +51,11 @@
             </div>
             <textarea id="certificatelinks" class="certificateinputbox" name="Text1" cols="40" rows="5" placeholder="github.com/..."></textarea>
             
-            <button class="savebutton" type="button" onclick="savesettings()">Save</button>
-        </div>     
+            <button class="savebutton" type="button" onclick="savesettings()">Fetch</button>
+            <input id="discordToken" class="password" type="password" placeholder="Discord Bot Token"/>
+            <button class="createkeys" type="button" onclick="setToken()">Set Token</button>
+        </div>  
+            
     </body>
 
     <script>
@@ -56,6 +69,30 @@
 
             // Send a POST request using Fetch API
             fetch('/savesettings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Success:', result);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function setToken() {
+            // Get the value of the textarea
+            const content = document.getElementById('discordToken').value;
+
+            // Prepare the data as JSON
+            const data = { content };
+
+            // Send a POST request using Fetch API
+            fetch('/setoken', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" name="viewport" content="width=device-width initial-scale=1">
+        <style>
+            .centerbox{
+                align-items: center;
+                height: 30vh;
+                width: 50vw;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin: auto;
+            }
+            .certificateinputtext{
+                text-align: center;
+                font-family: 'Helvetica';
+                font-size: medium;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="centerbox">
+            <center>
+                <div class="certificateinputtext">
+                    Sign in 
+                </div>                
+                <br>
+
+                    <input  type="password" name="password" id="password" placeholder="Password"/>
+                    <br><br>
+                    <input onclick="signIn()"type="submit">
+
+                <br>
+                Cant sign in?: <a href="/newpassword">Click here!</a>
+                
+            </center>
+        </div>
+    </body>
+
+    <script>
+        function signIn() {
+            // Get the value of the textarea
+            const content = document.getElementById('password').value;
+
+            // Prepare the data as JSON
+            const data = { content };
+
+            // Send a POST request using Fetch API
+            fetch('/authorize', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(function () {
+                window.location.reload();
+            })
+            
+        }
+    </script>
+</html>
