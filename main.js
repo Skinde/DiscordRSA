@@ -4,10 +4,10 @@ const prompt = require('prompt-sync')();
 const fs = require('node:fs');
 const crypto = require('crypto');   
 const express = require('express');
-const discordjs = require('discord.js');
 const ejs = require('ejs');
 const bodyParser = require('body-parser');
 const socketIo = require('socket.io');
+const { Client, Intents } = require('discord.js');
 const http = require('http');
 
 
@@ -213,7 +213,13 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 
-const Discordclient = new discordjs.Client();
+const Discordclient = new Client({
+    intents: [
+        Intents.FLAGS.GUILDS,
+        Intents.FLAGS.GUILD_MESSAGES,
+        Intents.FLAGS.MESSAGE_CONTENT,
+      ],
+});
 
 
 const data = [
@@ -264,11 +270,12 @@ app.put('/saveuser', function (req, res) {
 
 Discordclient.on('message', message => {
     decryptedMessage = DiscordEncryption.decryptMessage(message.content)
+    console.log(message.content)
     if (decryptedMessage != null && decryptedMessage != "")
     {
-        message = {}
-        message['content'] = decryptedMessage
-        data.push(message);
+        message_data = {}
+        message_data['content'] = decryptedMessage
+        data.push(message_data);
         io.emit('newMessage', decryptedMessage);
         console.log(decryptedMessage)
     }
