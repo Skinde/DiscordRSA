@@ -14,10 +14,12 @@ const http = require('http');
 class discordUser {
     discordUserID
     publicKey
+    publicKeyPlainText
 
     constructor(userID, inputKey){
         this.discordUserID = userID;
         this.publicKey = new NodeRSA(inputKey);
+        this.publicKeyPlainText = inputKey;
     }
     encryptMessage(message){
         return this.publicKey.encrypt(message, 'base64');
@@ -118,7 +120,13 @@ class discordEncryption {
     }
 
     decryptMessage(message){
-        return this.key.decrypt(message, 'utf8');
+        try {
+            return this.key.decrypt(message, 'utf8');
+        }
+        catch 
+        {
+            return null;
+        }
     }
     
 }
@@ -134,14 +142,23 @@ class discordServerBot {
         return text;
     }
     
-    parseUsers(data) {
+
+    async fetchUsers(links)
+    {
+        for (let i = 0; i < links.length; i++)
+        {
+            this.fetchPublicKeys(links[i]).then(data => DiscordBot.parseUsers(data))
+            
+        }
+    }
+
+    async parseUsers(data) {
         let mode = 0;
         let next_user = "";
         let next_key = "";
         let next_key_line = "";
-        
         for (let i = 0; i < data.length; i += 1) {
-
+            
             // Mode 0 parses the users
             if (mode == 0)
             {
@@ -153,7 +170,6 @@ class discordServerBot {
                     i += 1; //eat \n
                 }
             }
-
             // Mode 1 parses the public keys
             else
             {
@@ -161,12 +177,23 @@ class discordServerBot {
                 if (data[i] == '\n')
                 {
                     // Create new user object and pass the userid and userkey data
-                    if (next_key_line == "-----END PUBLIC KEY-----\n")
+                    if (next_key_line.replace(/(\r\n|\n|\r)/gm, "") == "-----END PUBLIC KEY-----")
                     {
+                        console.log("Detected end of key")
                         next_key += next_key_line;
                         mode = 0;
                         let new_user_object = new discordUser(next_user, next_key);
-                        this.discordUsers.push(new_user_object);
+                        if (next_user in this.discordUsers)
+                        {
+                            if (next_key != this.discordUsers[next_user].publicKeyPlainText)
+                            {
+                                console.error("ALERT: Public keys do not match somone has manipulated the public keys or you forgat to update one of your public keys, for more information: https://security.stackexchange.com/questions/113347/whats-the-actual-danger-of-public-key-spoofing")
+                                
+                                //Commit seppuku
+                                process.exit(1);
+                            }
+                        }
+                        this.discordUsers[next_user] = new_user_object;
                         next_user = "";
                         next_key_line = "";
                         next_key = "";
@@ -189,12 +216,9 @@ class discordServerBot {
 
     sendMessage(user, message)
     {
-        for (let i = 0; i < this.discordUsers.length; i++)
-        {
-            if (this.discordUsers[i].discordUserID == user) {
-                let encryptMessage = this.discordUsers[i].encryptMessage(message)
-                return encryptMessage
-            }
+        if (user in this.discordUsers){
+            let encryptMessage = this.discordUsers[user].encryptMessage(message)
+            return encryptMessage
         }
         console.error("User not found");
         return null;
@@ -289,10 +313,14 @@ app.post('/createkeys', function (req, res) {
 app.put('/savesettings', function (req, res) {
     //TODO:Sanatize
     links = req.body.content.split("\n")
+    /*
     for (let i = 0; i < links.length; i++)
     {
-        DiscordBot.fetchPublicKeys(links[i]).then(data => DiscordBot.parseUsers(data)).then(parseData => {console.log(DiscordBot.discordUsers)})
+        //DiscordBot.fetchPublicKeys(links[i]).then(data => DiscordBot.parseUsers(data))
+        
     }
+    */
+    DiscordBot.fetchUsers(links)
 
 })
 
@@ -301,7 +329,6 @@ app.put('/savesettings', function (req, res) {
 app.put('/authorize', function(req, res) {
     password = req.body.content;
     DiscordEncryption.loadPrivateKey(password);
-    console.log(DiscordEncryption.privateKeyHasLoaded)
     if (DiscordEncryption.privateKeyHasLoaded)
     {
         res.render('Chat', {data: data});
@@ -316,7 +343,14 @@ app.put('/sendmessage', function (req, res) {
     message = req.body.content;
     message_channel = Discordclient.channels.cache.get(current_channel_to_send_message);
     encrypted_message = DiscordBot.sendMessage(current_user_to_send_message, message);
-    message_channel.send(encrypted_message)
+    if (encrypted_message == null)
+    {
+        console.error("Error during encryption")
+    }
+    else
+    {
+        message_channel.send(encrypted_message)
+    }
 })
 
 app.put('/saveuser', function (req, res) {
@@ -335,7 +369,6 @@ Discordclient.on('message', message => {
         message_data['content'] = decryptedMessage
         data.push(message_data);
         io.emit('newMessage', decryptedMessage);
-        console.log(decryptedMessage)
     }
 })
 
