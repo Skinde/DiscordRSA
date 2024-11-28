@@ -50,10 +50,9 @@
                 Paste links to public keys collection:
             </div>
             <textarea id="certificatelinks" class="certificateinputbox" name="Text1" cols="40" rows="5" placeholder="github.com/..."></textarea>
-            
-            <button class="savebutton" type="button" onclick="savesettings()">Fetch</button>
             <input id="discordToken" class="password" type="password" placeholder="Discord Bot Token"/>
-            <button class="createkeys" type="button" onclick="setToken()">Set Token</button>
+            <input id="password" class="password" type="password" placeholder="Password"/>
+            <button class="savebutton" type="button" onclick="savesettings()">Save</button>
         </div>  
             
     </body>
@@ -62,37 +61,15 @@
 
         function savesettings() {
             // Get the value of the textarea
-            const content = document.getElementById('certificatelinks').value;
+            const certificateLinks = document.getElementById('certificatelinks').value;
+            const discordBotToken = document.getElementById('discordToken').value;
+            const password = document.getElementById('password').value;
 
             // Prepare the data as JSON
-            const data = { content };
+            const data = {certificateLinks, discordBotToken, password};
 
             // Send a POST request using Fetch API
             fetch('/savesettings', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                console.log('Success:', result);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-
-        function setToken() {
-            // Get the value of the textarea
-            const content = document.getElementById('discordToken').value;
-
-            // Prepare the data as JSON
-            const data = { content };
-
-            // Send a POST request using Fetch API
-            fetch('/setoken', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
