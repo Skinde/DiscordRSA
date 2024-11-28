@@ -13,3 +13,5 @@ Finally you will need to invite a Discord bot in your server and copy the server
 the app.
 
 You will now be able to use the application as a chatbox.
+
+DO NOT SHARE YOUR PRIVATE KEY OR PASSWORD.
