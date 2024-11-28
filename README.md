@@ -13,24 +13,24 @@ DO NOT SHARE YOUR PRIVATE KEY OR PASSWORD.
 
 you will need to install the following libraries using
 
-'''
+```
 npm install node-rsa prompt-sync fs crypto express ejs body-parser socket.io discord.js http v8
-'''
+```
 
-Then run the program using
+Then run the program using:
 
-'''
+```
 node main.js
-'''
+```
 
-Then simply connect to your browser to
+Then simply connect your browser to:
 
-'''
+```
 localhost:3000
-'''
+```
 
 You will need to invite a Discord bot to a Server. Then, in the Configuration menu set the Discord Token, and Public Keys repos links. Finally, copy and paste the Channel ID and the Name of the person you want to write to in the main menu.
 
 Write a message with the following format:
 
-<Your user>: <Message>
+"Your user": "Message"
