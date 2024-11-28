@@ -33,4 +33,6 @@ You will need to invite a Discord bot to a Server. Then, in the Configuration me
 
 Write a message with the following format:
 
+```
 "Your user": "Message"
+```
