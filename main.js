@@ -503,15 +503,21 @@ function parseMessageAndSignature(input, separator = "[[SIGNATURE]]") {
 }
 
 function parseUser(input) {
-    // Match the format "user: message [[SIGNATURE]] signature"
-    const userPattern = /^(.*?):\s*/;
-    const match = input.match(userPattern);
+    // Find the index of the colon (:) which separates the user from the message
+    const colonIndex = input.indexOf(':');
 
-    // If there's a match, extract the user, otherwise return an empty string
-    return match ? match[1].trim() : "";
+    // If there's no colon, return an empty string
+    if (colonIndex === -1) {
+        return "";
+    }
+
+    // Extract the substring before the colon and trim any extra spaces
+    const user = input.substring(0, colonIndex).trim();
+
+    return user;
 }
 
-DiscordBot.Discordclient.on('message', message => {
+DiscordBot.Discordclient.on('message', message => {    
     const {messageContent, signature} = parseMessageAndSignature(message.content)
     decryptedMessage = DiscordEncryption.decryptMessage(messageContent)
     userOfTheMessage = parseUser(decryptedMessage)
@@ -520,7 +526,8 @@ DiscordBot.Discordclient.on('message', message => {
         message_data = {}
         message_data['content'] = decryptedMessage
         data.push(message_data);
-        io.emit('newMessage', decryptedMessage);
+        const clean = DOMPurify.sanitize(decryptedMessage);
+        io.emit('newMessage', clean);
     }
 })
 
