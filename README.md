@@ -36,3 +36,5 @@ Write a message with the following format:
 ```
 "Your user": "Message"
 ```
+
+It's important to specify "Your user" since this will be used to validate your signature and, therefore, the authenticity of the message.
