@@ -11,7 +11,7 @@ const { Client, Intents } = require('discord.js');
 const http = require('http');
 const { Deserializer } = require('v8');
 const { DiscordAPIError } = require('discord.js');
-
+const DOMPurify = require('isomorphic-dompurify');
 
 function EncryptData (password, directory, filename, data) {
     try {
@@ -208,68 +208,62 @@ class discordServerBot {
     }
 
     async parseUsers(data) {
-        let mode = 0;
-        let next_user = "";
-        let next_key = "";
-        let next_key_line = "";
-        for (let i = 0; i < data.length; i += 1) {
-            
-            // Mode 0 parses the users
-            if (mode == 0)
-            {
-                next_user += data[i];
-
-                if (data[i] == ':'){
-                    next_user = next_user.substring(0,next_user.length - 1); //eat :
-                    mode = 1;
-                    i += 1; //eat \n
-                }
-            }
-            // Mode 1 parses the public keys
-            else
-            {
-                next_key_line += data[i];
-                if (data[i] == '\n')
-                {
-                    // Create new user object and pass the userid and userkey data
-                    if (next_key_line.replace(/(\r\n|\n|\r)/gm, "") == "-----END PUBLIC KEY-----")
-                    {
-                        console.log("Detected end of key")
-                        next_key += next_key_line;
-                        mode = 0;
-                        let new_user_object = new discordUser(next_user, next_key);
-                        if (next_user in this.discordUsers)
-                        {
-                            if (next_key != this.discordUsers[next_user].publicKeyPlainText)
-                            {
-                                console.error("ALERT: Public keys do not match somone has manipulated the public keys or you forgat to update one of your public keys, for more information: https://security.stackexchange.com/questions/113347/whats-the-actual-danger-of-public-key-spoofing")
-                                
-                                //Commit seppuku
-                                process.exit(1);
-                            }
+        console.log("Data to parse: ", data);
+    
+        let lines = data.split(/\r?\n/); // Split data into lines
+        let currentUser = "";
+        let currentKey = [];
+        let isReadingKey = false;
+    
+        for (let line of lines) {
+            if (isReadingKey) {
+                // Collect public key lines
+                currentKey.push(line);
+                if (line.trim() === "-----END PUBLIC KEY-----") {
+                    // Public key finished, process user and key
+                    const publicKey = currentKey.join("\n");
+                    
+                    // Check for existing user and mismatched keys
+                    if (currentUser in this.discordUsers) {
+                        const existingKey = this.discordUsers[currentUser].publicKeyPlainText;
+                        if (publicKey !== existingKey) {
+                            console.error(
+                                `ALERT: Public keys do not match for user ${currentUser}. ` +
+                                `Someone has manipulated the public keys or you forgot to update one. ` +
+                                `For more information: https://security.stackexchange.com/questions/113347/whats-the-actual-danger-of-public-key-spoofing`
+                            );
+                            process.exit(1); // Terminate process if keys do not match
                         }
-                        this.discordUsers[next_user] = new_user_object;
-                        next_user = "";
-                        next_key_line = "";
-                        next_key = "";
                     }
-
-                    // Else add the next line to the key
-                    else
-                    {
-                        next_key += next_key_line;
-                        next_key_line = "";
-                    }
+    
+                    // Add or update the user
+                    this.discordUsers[currentUser] = new discordUser(currentUser, publicKey);
+                    console.log(`Added/Updated user: ${currentUser}`);
+    
+                    // Reset variables for the next user
+                    currentUser = "";
+                    currentKey = [];
+                    isReadingKey = false;
                 }
-                
+            } else {
+                // Detect user and start reading their public key
+                const userMatch = line.match(/^(.+):$/);
+                if (userMatch) {
+                    currentUser = userMatch[1].trim();
+                    isReadingKey = true; // Start capturing the public key
+                }
             }
         }
-
+    
+        console.log("Parsed users: ", this.discordUsers);
         return this.discordUsers;
     }
+    
+    
 
     sendMessage(user, message, signature)
     {
+        console.log(this.discordUsers)
         if (user in this.discordUsers){
             let encryptMessage = this.discordUsers[user].encryptMessage(message) + "[[SIGNATURE]]" + signature
             return encryptMessage
@@ -334,6 +328,7 @@ class discordServerBot {
     saveOthersPublicKeys(links, password)
     {
         try {
+            console.log("links: " + links)
             this.fetchUsers(links)
             EncryptData(password, this.otherUsersPublicKeysDirectory, this.otherUsersPublicKeysFileName, links)
         }
@@ -349,6 +344,7 @@ class discordServerBot {
             let links = DecryptData(password, this.otherUsersPublicKeysDirectory, this.otherUsersPublicKeysFileName)
             if (links)
             {
+                console.log("decrypted links: " + links)
                 this.fetchUsers(links)
                 this.hasUrlsLoaded = true
                 return true
@@ -437,7 +433,7 @@ app.put('/savesettings', function (req, res) {
 
     if (password)
     {
-
+        console.log("Saving")
         if (links)
         {
             DiscordBot.saveOthersPublicKeys(links, password)
